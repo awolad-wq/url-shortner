@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import prisma, { pool } from './config/database.js';
+import userRoute from "./routes/user.routes.js"
 
 const app = express();
 
@@ -22,10 +23,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 app.get('/', (req, res) => {
   console.log('Root route hit!');
   res.json({ message: 'Server is running!' });
 });
+
 
 app.get('/health', async (req, res) => {
   console.log('Health route hit!');
@@ -44,6 +47,17 @@ app.get('/health', async (req, res) => {
     });
   }
 });
+
+
+
+
+
+app.use("/api/v1", userRoute)
+
+
+
+
+
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
