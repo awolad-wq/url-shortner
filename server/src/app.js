@@ -1,70 +1,59 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import prisma, { pool } from "./config/database.js";
-import urlshortRoute from "./routes/url.routes.js";
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import urlRouter from './routes/short.routes.js';
 
 const app = express();
 
-// Request logger - add this FIRST
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  console.log("Headers:", req.headers);
-  next();
+// ============================================
+// MIDDLEWARE
+// ============================================
+
+// CORS
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true,
+}));
+
+// Body parsers
+app.use(express.json({ limit: '16kb' }));
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+
+// Trust proxy (for X-Forwarded-For header)
+app.set('trust proxy', true);
+
+// ============================================
+// ROUTES
+// ============================================
+
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'URL Shortener API is running',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Middleware - More permissive CORS
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// URL shortener routes
+app.use('/api/v1', urlRouter);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.get("/", (req, res) => {
-  console.log("Root route hit!");
-  res.json({ message: "Server is running!" });
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found',
+  });
 });
 
-app.get("/health", async (req, res) => {
-  console.log("Health route hit!");
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({
-      status: "ok",
-      database: "connected",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      database: "disconnected",
-      error: error.message,
-    });
-  }
-});
-
-app.use("/api/v1", urlshortRoute);
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  console.log("\nShutting down gracefully...");
-  await prisma.$disconnect();
-  await pool.end();
-  console.log("Database disconnected");
-  process.exit(0);
-});
-
-process.on("SIGTERM", async () => {
-  console.log("\nShutting down gracefully...");
-  await prisma.$disconnect();
-  await pool.end();
-  console.log("Database disconnected");
-  process.exit(0);
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  
+  res.status(err.statusCode || 500).json({
+    success: false,
+    error: err.message || 'Internal server error',
+  });
 });
 
 export default app;
