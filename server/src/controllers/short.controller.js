@@ -17,7 +17,6 @@ const getExpirationDate = (days = DEFAULT_EXPIRATION_DAYS) => {
   return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 };
 
-
 const isValidUrl = (url) => {
   try {
     const urlObj = new URL(url);
@@ -83,7 +82,6 @@ const generateUniqueAlias = async (length = 6, maxRetries = 5) => {
   return { success: false, error: "Failed to generate unique alias" };
 };
 
-
 const rateLimitStore = new Map();
 
 const checkRateLimit = (identifier) => {
@@ -126,7 +124,6 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
-
 const cleanupExpiredLinks = async () => {
   try {
     const now = new Date();
@@ -147,7 +144,6 @@ const cleanupExpiredLinks = async () => {
 
 setInterval(cleanupExpiredLinks, 60 * 60 * 1000);
 cleanupExpiredLinks();
-
 
 export const createShortUrl = asyncHandler(async (req, res) => {
   const { originalUrl, customAlias } = req.body;
@@ -210,13 +206,17 @@ export const createShortUrl = asyncHandler(async (req, res) => {
   // AUTO-SET EXPIRATION DATE
   const expirationDate = getExpirationDate(DEFAULT_EXPIRATION_DAYS);
 
-  const existingLink = await prisma.link.findFirst({
-    where: {
-      longUrl: originalUrl,
-      isActive: true,
-      expiresAt: { gt: new Date() },
-    },
-  });
+  let existingLink;
+
+  if (!customAlias) {
+     existingLink = await prisma.link.findFirst({
+      where: {
+        longUrl: originalUrl,
+        isActive: true,
+        expiresAt: { gt: new Date() },
+      },
+    });
+  }
 
   if (existingLink) {
     return res.status(200).json({
@@ -340,7 +340,6 @@ export const getUrl = asyncHandler(async (req, res) => {
   // Redirect with 302 (temporary) to ensure clicks are tracked
   return res.redirect(302, link.longUrl);
 });
-
 
 export const getUrlStats = asyncHandler(async (req, res) => {
   const { alias } = req.params;
