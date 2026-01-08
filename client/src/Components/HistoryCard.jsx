@@ -38,7 +38,7 @@ const HistoryCrad = ({ item }) => {
 
       <Link
         to={`/stats/${item.alias}`}
-        className="shrink-0 text-sm border px-4 py-2 rounded-lg whitespace-nowrap"
+        className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 hover:bg-slate-100"
       >
         Details →
       </Link>

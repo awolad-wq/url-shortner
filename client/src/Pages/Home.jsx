@@ -21,7 +21,7 @@ const Home = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 mb-10">
+    <div className="max-w-md mx-auto mt-25 mb-10">
       <h1 className="text-4xl font-bold text-center mb-3">
         Apar's Link Shortener
       </h1>
