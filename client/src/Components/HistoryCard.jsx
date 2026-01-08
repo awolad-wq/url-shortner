@@ -19,7 +19,7 @@ const HistoryCrad = ({ item }) => {
         <p className="font-medium text-slate-800 truncate break-all">
           {item.originalUrl}
         </p>
-        
+
         <Link to={shortUrl} className="text-blue-600 text-sm truncate block break-all">
           {shortUrl}
         </Link>
@@ -27,7 +27,7 @@ const HistoryCrad = ({ item }) => {
 
       <button
         onClick={copy}
-        className={`px-4 py-2 rounded-xl text-sm font-medium border transition 
+        className={`px-4 py-2 rounded-xl text-sm font-medium border cursor-pointer transition 
         ${copied
             ? "bg-green-600 text-white border-green-600"
             : "bg-slate-900 text-white hover:bg-slate-800 border-slate-900"
