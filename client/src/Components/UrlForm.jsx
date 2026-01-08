@@ -11,7 +11,7 @@ const UrlForm = ({ onSuccess }) => {
 
   // Validate URL format
   const isValidUrl = (value) => {
-    const regex = /^(https?:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/;
+    const regex = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/[^\s]*)?$/;
     return regex.test(value.trim());
   };
 
@@ -29,7 +29,7 @@ const UrlForm = ({ onSuccess }) => {
 
     try {
       const res = await axios.post("/shorten", {
-        originalUrl: url.trim(),
+        originalUrl: url,
         customAlias: alias || undefined,
       });
 

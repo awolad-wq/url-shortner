@@ -68,7 +68,6 @@ const UrlResult = ({ result }) => {
           {new Date(result.expiresAt).toLocaleDateString()}
         </b></span>
       </div>
-
     </div>
 
   );
