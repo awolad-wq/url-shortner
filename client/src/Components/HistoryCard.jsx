@@ -19,10 +19,10 @@ const HistoryCrad = ({ item }) => {
         <p className="font-medium text-slate-800 truncate break-all">
           {item.originalUrl}
         </p>
-
-        <a className="text-blue-600 text-sm truncate block break-all">
+        
+        <Link to={shortUrl} className="text-blue-600 text-sm truncate block break-all">
           {shortUrl}
-        </a>
+        </Link>
       </div>
 
       <button
