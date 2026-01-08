@@ -16,10 +16,10 @@ const Navbar = () => {
         </div>
         
         {/* Center - Nav links */}
-        <div className="flex gap-6 text-sm font-medium justify-center">
-          <Link to="/" className="hover:text-blue-400">Home</Link>
+        {/* <div className="flex gap-6 text-sm font-medium justify-center"> */}
+          {/* <Link to="/" className="hover:text-blue-400">Home</Link> */}
           {/* <Link to="/stats" className="hover:text-blue-400">Statistics</Link> */}
-        </div>
+        {/* </div> */}
 
         {/* Right - Buttons */}
         <div className="flex-1 flex justify-end gap-4">
