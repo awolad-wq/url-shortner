@@ -24,10 +24,10 @@ const Navbar = () => {
         {/* Right - Buttons */}
         <div className="flex-1 flex justify-end gap-4">
           <button className="border px-4 py-1.5 rounded-lg hover:bg-slate-100">
-            <Link to="/login">Log in</Link>
+            <Link>Log in</Link>
           </button>
           <button className="bg-slate-700 shadow-lg shadow-slate-500/60 text-white px-4 py-1.5 rounded-lg hover:bg-slate-900 cursor-pointer">
-            Sign up
+            <Link>Sign Up</Link>
           </button>
         </div>
 
