@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Link {
+  id        String   @id @default(cuid())
+  alias     String   @unique // Enforces uniqueness
+  longUrl   String   @map("long_url") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  isActive  Boolean  @default(true) @map("is_active")
+
+  // Relationship: One link has many clicks
+  clicks Click[]
+
+  // Indexes for performance
+  @@index([alias])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@map("links")
+}
+
+model Click {
+  id        String   @id @default(cuid())
+  linkId    String   @map("link_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  referrer  String?  @db.Text
+  userAgent String?  @map("user_agent") @db.Text
+  ipHash    String?  @map("ip_hash") // SHA-256 hash only, never raw IP
+
+  // Foreign key with CASCADE delete
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  // Composite index for analytics queries (link_id, created_at)
+  @@index([linkId, createdAt])
+  @@index([linkId])
+  @@map("clicks")
+}
