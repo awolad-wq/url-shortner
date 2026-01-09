@@ -33,15 +33,17 @@ const UrlForm = ({ onSuccess }) => {
         customAlias: alias || undefined,
       });
 
-      if (!res.data.success) throw new Error(res.data.message);
+      if (!res.data.success) setError("Failed to shorten URL. Please try again.");
 
       onSuccess(res.data.data);
       setUrl("");
       setAlias("");
     } catch (err) {
-      setError(
-        err.response?.data?.error || err.message || "Invalid URL"
-      );
+      if (!err.response) {
+        setError("Network Error. Server is not running");
+      } else {
+        setError(err.response.data?.error || "Invalid URL");
+      }
     } finally {
       setLoading(false);
     }
