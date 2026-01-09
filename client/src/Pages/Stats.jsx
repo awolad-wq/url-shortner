@@ -51,7 +51,15 @@ const Stats = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-14">
-      <h1 className="text-3xl font-bold mb-8">Link Analytics</h1>
+      <h1 className="text-3xl font-bold mb-5">Link Analytics</h1>
+      <div className='mb-5'>
+        <p>
+        <b>Original URL:</b> <a href={data.originalUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{data.originalUrl}</a>
+      </p>
+      <p>
+        <b>Short-URL:</b> <a href={`${import.meta.env.VITE_API}/${data.alias}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{`${import.meta.env.VITE_API}/${data.alias}`}</a>
+      </p>
+      </div>
 
       {/* INFO CARDS */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
