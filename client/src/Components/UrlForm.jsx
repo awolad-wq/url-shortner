@@ -21,7 +21,7 @@ const UrlForm = ({ onSuccess }) => {
 
     // FRONTEND VALIDATION
     if (!isValidUrl(url)) {
-      setError("Please enter a valid URL (must include https:// and a domain).");
+      setError("Please enter a valid URL (include https:// or http:// and a domain).");
       return;
     }
 
@@ -33,22 +33,24 @@ const UrlForm = ({ onSuccess }) => {
         customAlias: alias || undefined,
       });
 
-      if (!res.data.success) throw new Error(res.data.message);
+      if (!res.data.success) setError("Failed to shorten URL. Please try again.");
 
       onSuccess(res.data.data);
       setUrl("");
       setAlias("");
     } catch (err) {
-      setError(
-        err.response?.data?.error || err.message || "Invalid URL"
-      );
+      if (!err.response) {
+        setError("Network Error. Server is not running");
+      } else {
+        setError(err.response.data?.error || "Invalid URL");
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-lg">
+    <form onSubmit={handleSubmit} className="bg-slate-50 p-6 rounded-xl shadow-lg">
 
       <div className="mb-4">
         <label className="block text-sm font-medium mb-1">Paste a long URL</label>
