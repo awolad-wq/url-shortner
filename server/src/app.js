@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import urlRouter from './routes/short.routes.js';
+import { xss } from "express-xss-sanitizer";
 
 const app = express();
 
@@ -34,6 +35,8 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use(xss());
 
 // URL shortener routes
 app.use('/api/v1', urlRouter);
