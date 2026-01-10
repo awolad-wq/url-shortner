@@ -23,6 +23,7 @@ const Stats = () => {
         const res = await axios.get(`/stats/${alias}`);
         const apiData = res.data.data;
         setData(apiData);
+        console.log(apiData);
 
 
         // Line chart data collection
@@ -63,11 +64,13 @@ const Stats = () => {
       </div>
 
       {/* INFO CARDS */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
         <StatCard label="Total Clicks" value={data.analytics.totalClicks} />
         <StatCard label="Last 7 Days" value={data.analytics.clicksLast7Days} />
         <StatCard label="Last 30 Days" value={data.analytics.clicksLast30Days} />
-        <StatCard label="Status" value={data.isActive ? "Active" : "Inactive"} />
+        <StatCard label="Link Will Expire:" value={new Date(data.expiresAt).toLocaleDateString()} />
+        <StatCard label="Status" value={<span className={data.isActive ? "text-green-500" : "text-red-500"}>
+          {data.isActive ? "Active" : "Inactive"}</span>} />
       </div>
 
       {/* LINE CHART */}
