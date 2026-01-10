@@ -5,7 +5,7 @@ const Navbar = () => {
 
 
   return (
-    <nav className="bg-white shadow-sm ">
+    <nav className="bg-white shadow-sm">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center">
 
         {/* Left - Logo */}
@@ -23,10 +23,10 @@ const Navbar = () => {
 
         {/* Right - Buttons */}
         <div className="flex-1 flex justify-end gap-4">
-          <button className="border px-4 py-1.5 rounded-lg hover:bg-slate-100">
+          <button className="border px-2.5 md:px-4 py1.5 rounded-lg hover:bg-slate-100">
             <Link>Log in</Link>
           </button>
-          <button className="bg-slate-700 shadow-lg shadow-slate-500/60 text-white px-4 py-1.5 rounded-lg hover:bg-slate-900 cursor-pointer">
+          <button className="bg-slate-700 shadow-lg shadow-slate-500/60 text-white px-2.5 md:px-4 py-1.5 rounded-lg hover:bg-slate-900 cursor-pointer">
             <Link>Sign Up</Link>
           </button>
         </div>
