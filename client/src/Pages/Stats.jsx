@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import useAxios from '../Hooks/UseAxios';
 
 import {
@@ -23,6 +23,7 @@ const Stats = () => {
         const res = await axios.get(`/stats/${alias}`);
         const apiData = res.data.data;
         setData(apiData);
+
 
         // Line chart data collection
         const formatted = Object.entries(apiData.analytics.clicksByDay).map(
@@ -51,7 +52,15 @@ const Stats = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-14">
-      <h1 className="text-3xl font-bold mb-8">Link Analytics</h1>
+      <h1 className="text-3xl font-bold mb-5">Link Analytics</h1>
+      <div className='mb-5'>
+        <p>
+          <b>Original URL:</b> <Link to={data.originalUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:underline">{data.originalUrl}</Link>
+        </p>
+        <p>
+          <b>Short-URL:</b> <Link to={`${import.meta.env.VITE_API}/${data.alias}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:underline">{`${import.meta.env.VITE_API}/${data.alias}`}</Link>
+        </p>
+      </div>
 
       {/* INFO CARDS */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
