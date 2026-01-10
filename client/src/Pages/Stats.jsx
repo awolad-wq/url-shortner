@@ -23,7 +23,7 @@ const Stats = () => {
         const res = await axios.get(`/stats/${alias}`);
         const apiData = res.data.data;
         setData(apiData);
-        console.log(apiData);
+        
 
 
         // Line chart data collection
