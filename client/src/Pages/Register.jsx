@@ -11,11 +11,13 @@ const Register = () => {
     confirmPassword: "",
   });
 
-  function handleChange(e) {
+  const handleChange = (e) => { 
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  console.log(form);
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     // connect backend later
     console.log(form);
