@@ -3,9 +3,11 @@ import express from "express";
 import cors from "cors";
 import urlRouter from "./routes/short.routes.js";
 import { xss } from "express-xss-sanitizer";
+import authRouter from "./routes/auth.routes.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
-
+app.use(cookieParser());
 // ============================================
 // MIDDLEWARE
 // ============================================
@@ -42,6 +44,7 @@ app.use(xss());
 
 // URL shortener routes
 app.use("/api/v1", urlRouter);
+app.use("/api/v1/auth", authRouter);
 
 // 404 handler
 app.use((req, res) => {

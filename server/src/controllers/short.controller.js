@@ -2,6 +2,7 @@ import crypto from "crypto";
 import prisma from "../config/database.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { nanoid } from "nanoid";
+import { verifyUrl } from "../services/urlVerifier.js";
 
 const DEFAULT_EXPIRATION_DAYS = 30;
 
@@ -53,7 +54,16 @@ const isValidAlias = (alias) => {
     };
   }
 
-  const reservedAliases = ["shorten", "stats", "api", "admin", "health"];
+  const reservedAliases = [
+    "shorten",
+    "stats",
+    "api",
+    "admin",
+    "health",
+    "user",
+    "auth",
+    "check",
+  ];
   if (reservedAliases.includes(alias.toLowerCase())) {
     return { valid: false, error: "This alias is reserved" };
   }
@@ -146,7 +156,8 @@ setInterval(cleanupExpiredLinks, 60 * 60 * 1000);
 cleanupExpiredLinks();
 
 export const createShortUrl = asyncHandler(async (req, res) => {
-  const { originalUrl, customAlias } = req.body;
+  const { originalUrl, customAlias, expirationDays } = req.body;
+  const userId = req.user?.id; // From optional auth middleware
 
   // RATE LIMITING
   const clientIp =
@@ -171,6 +182,13 @@ export const createShortUrl = asyncHandler(async (req, res) => {
   }
 
   const urlValidation = isValidUrl(originalUrl);
+  const verify = await verifyUrl(originalUrl);
+  if (!verify.isAccessible) {
+    return res.status(400).json({
+      success: false,
+      error: "URL is not reachable or DNS does not exist",
+    });
+  }
   if (!urlValidation.valid) {
     return res.status(400).json({
       success: false,
@@ -204,17 +222,29 @@ export const createShortUrl = asyncHandler(async (req, res) => {
   }
 
   // AUTO-SET EXPIRATION DATE
-  const expirationDate = getExpirationDate(DEFAULT_EXPIRATION_DAYS);
+  const expDays = expirationDays || DEFAULT_EXPIRATION_DAYS;
+  const expirationDate = getExpirationDate(expDays);
 
   let existingLink;
 
+  // Check for existing link (user-specific if authenticated)
   if (!customAlias) {
-     existingLink = await prisma.link.findFirst({
-      where: {
-        longUrl: originalUrl,
-        isActive: true,
-        expiresAt: { gt: new Date() },
-      },
+    const whereCondition = {
+      longUrl: originalUrl,
+      isActive: true,
+      expiresAt: { gt: new Date() },
+    };
+
+    // If user is authenticated, only check their own links
+    if (userId) {
+      whereCondition.userId = userId;
+    } else {
+      // For anonymous users, only check anonymous links
+      whereCondition.userId = null;
+    }
+
+    existingLink = await prisma.link.findFirst({
+      where: whereCondition,
     });
   }
 
@@ -230,6 +260,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
         originalUrl: existingLink.longUrl,
         createdAt: existingLink.createdAt,
         expiresAt: existingLink.expiresAt,
+        isOwned: !!userId,
       },
     });
   }
@@ -255,6 +286,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
         alias,
         longUrl: originalUrl,
         expiresAt: expirationDate,
+        userId, // Associate with user if authenticated, null otherwise
       },
     });
 
@@ -267,6 +299,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
         originalUrl: newLink.longUrl,
         createdAt: newLink.createdAt,
         expiresAt: newLink.expiresAt,
+        isOwned: !!userId,
       },
     });
   } catch (error) {
@@ -346,12 +379,39 @@ export const getUrlStats = asyncHandler(async (req, res) => {
 
   const link = await prisma.link.findUnique({
     where: { alias },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
+    },
   });
 
   if (!link) {
     return res.status(404).json({
       success: false,
       error: "Short URL not found",
+    });
+  }
+
+  // Check authorization for private link stats
+  const isOwner = req.user && link.userId === req.user.id;
+  const isAdmin = req.user && req.user.role === "ADMIN";
+
+  // If link is owned by a user and requester is not owner/admin, limit stats
+  if (link.userId && !isOwner && !isAdmin) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        alias: link.alias,
+        originalUrl: link.longUrl,
+        createdAt: link.createdAt,
+        isPrivate: true,
+        message: "Detailed statistics are only available to the link owner",
+      },
     });
   }
 
@@ -425,12 +485,381 @@ export const getUrlStats = asyncHandler(async (req, res) => {
       expiresAt: link.expiresAt,
       isExpired,
       isActive: link.isActive,
+      isBroken: link.isBroken,
+      lastChecked: link.lastChecked,
+      owner: link.user
+        ? {
+            name: link.user.name,
+            email: isOwner || isAdmin ? link.user.email : undefined,
+          }
+        : null,
       analytics: {
-        totalClicks, // Total all-time clicks
-        clicksLast7Days, // Clicks in last 7 days
-        clicksLast30Days, // Clicks in last 30 days
-        clicksByDay, // Daily breakdown: {"2026-01-06": 5, ...}
-        topReferrers, // Top 5 sources: [{referrer: "google.com", count: 10}, ...]
+        totalClicks,
+        clicksLast7Days,
+        clicksLast30Days,
+        clicksByDay,
+        topReferrers,
+      },
+    },
+  });
+});
+
+// NEW: Get all links for authenticated user
+export const getUserLinks = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, filter = "all" } = req.query;
+  const skip = (page - 1) * limit;
+
+  const whereCondition = { userId: req.user.id };
+
+  // Apply filters
+  if (filter === "active") {
+    whereCondition.isActive = true;
+    whereCondition.expiresAt = { gt: new Date() };
+  } else if (filter === "expired") {
+    whereCondition.expiresAt = { lte: new Date() };
+  } else if (filter === "broken") {
+    whereCondition.isBroken = true;
+  }
+
+  const [links, total] = await Promise.all([
+    prisma.link.findMany({
+      where: whereCondition,
+      include: {
+        _count: {
+          select: { clicks: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: parseInt(limit),
+    }),
+    prisma.link.count({
+      where: whereCondition,
+    }),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      links: links.map((link) => ({
+        alias: link.alias,
+        originalUrl: link.longUrl,
+        shortUrl: `${req.protocol}://${req.get("host")}/api/v1/${link.alias}`,
+        clicks: link._count.clicks,
+        createdAt: link.createdAt,
+        expiresAt: link.expiresAt,
+        isActive: link.isActive,
+        isBroken: link.isBroken,
+        lastChecked: link.lastChecked,
+        isExpired: link.expiresAt ? new Date() > link.expiresAt : false,
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    },
+  });
+});
+
+// NEW: Get user dashboard statistics
+export const getUserStats = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const [
+    totalLinks,
+    activeLinks,
+    expiredLinks,
+    brokenLinks,
+    totalClicks,
+    recentClicks,
+  ] = await Promise.all([
+    // Total links
+    prisma.link.count({
+      where: { userId },
+    }),
+    // Active links
+    prisma.link.count({
+      where: {
+        userId,
+        isActive: true,
+        expiresAt: { gt: new Date() },
+      },
+    }),
+    // Expired links
+    prisma.link.count({
+      where: {
+        userId,
+        expiresAt: { lte: new Date() },
+      },
+    }),
+    // Broken links
+    prisma.link.count({
+      where: {
+        userId,
+        isBroken: true,
+      },
+    }),
+    // Total clicks across all user links
+    prisma.click.count({
+      where: {
+        link: { userId },
+      },
+    }),
+    // Recent clicks (last 7 days)
+    prisma.click.count({
+      where: {
+        link: { userId },
+        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    }),
+  ]);
+
+  // Get top 5 performing links
+  const topLinks = await prisma.link.findMany({
+    where: { userId },
+    include: {
+      _count: {
+        select: { clicks: true },
+      },
+    },
+    orderBy: {
+      clicks: {
+        _count: "desc",
+      },
+    },
+    take: 5,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      overview: {
+        totalLinks,
+        activeLinks,
+        expiredLinks,
+        brokenLinks,
+        totalClicks,
+        recentClicks,
+      },
+      topLinks: topLinks.map((link) => ({
+        alias: link.alias,
+        originalUrl: link.longUrl,
+        clicks: link._count.clicks,
+        createdAt: link.createdAt,
+      })),
+    },
+  });
+});
+
+// NEW: Update link (toggle active, change expiration)
+export const updateLink = asyncHandler(async (req, res) => {
+  const { alias } = req.params;
+  const { isActive, expirationDays } = req.body;
+
+  const link = await prisma.link.findUnique({
+    where: { alias },
+  });
+
+  if (!link) {
+    return res.status(404).json({
+      success: false,
+      error: "Short URL not found",
+    });
+  }
+
+  // Check authorization
+  const isOwner = link.userId === req.user.id;
+  const isAdmin = req.user.role === "ADMIN";
+
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to update this link",
+    });
+  }
+
+  const updateData = {};
+
+  if (typeof isActive === "boolean") {
+    updateData.isActive = isActive;
+  }
+
+  if (expirationDays) {
+    updateData.expiresAt = getExpirationDate(expirationDays);
+  }
+
+  const updatedLink = await prisma.link.update({
+    where: { alias },
+    data: updateData,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Link updated successfully",
+    data: {
+      alias: updatedLink.alias,
+      originalUrl: updatedLink.longUrl,
+      isActive: updatedLink.isActive,
+      expiresAt: updatedLink.expiresAt,
+    },
+  });
+});
+
+// NEW: Delete link
+export const deleteLink = asyncHandler(async (req, res) => {
+  const { alias } = req.params;
+
+  const link = await prisma.link.findUnique({
+    where: { alias },
+  });
+
+  if (!link) {
+    return res.status(404).json({
+      success: false,
+      error: "Short URL not found",
+    });
+  }
+
+  // Check authorization
+  const isOwner = link.userId === req.user.id;
+  const isAdmin = req.user.role === "ADMIN";
+
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to delete this link",
+    });
+  }
+
+  await prisma.link.delete({
+    where: { alias },
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Link deleted successfully",
+  });
+});
+
+// NEW: Check URL health (verify if URL is still accessible)
+export const checkUrlHealth = asyncHandler(async (req, res) => {
+  const { alias } = req.params;
+
+  const link = await prisma.link.findUnique({
+    where: { alias },
+  });
+
+  if (!link) {
+    return res.status(404).json({
+      success: false,
+      error: "Short URL not found",
+    });
+  }
+
+  // Check authorization for owned links
+  if (link.userId) {
+    const isOwner = req.user && link.userId === req.user.id;
+    const isAdmin = req.user && req.user.role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: "You don't have permission to check this link",
+      });
+    }
+  }
+
+  // Verify URL
+  const result = await verifyUrl(link.longUrl);
+
+  // Update link status
+  await prisma.link.update({
+    where: { id: link.id },
+    data: {
+      isBroken: !result.isAccessible,
+      lastChecked: new Date(),
+    },
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      alias: link.alias,
+      originalUrl: link.longUrl,
+      isAccessible: result.isAccessible,
+      statusCode: result.statusCode,
+      lastChecked: new Date(),
+      message: result.isAccessible
+        ? "URL is accessible"
+        : "URL is not accessible or broken",
+    },
+  });
+});
+
+// ADMIN: Get all links with pagination
+export const getAllLinks = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, filter = "all" } = req.query;
+  const skip = (page - 1) * limit;
+
+  const whereCondition = {};
+
+  if (filter === "broken") {
+    whereCondition.isBroken = true;
+  } else if (filter === "expired") {
+    whereCondition.expiresAt = { lte: new Date() };
+  }
+
+  const [links, total] = await Promise.all([
+    prisma.link.findMany({
+      where: whereCondition,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: { clicks: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: parseInt(limit),
+    }),
+    prisma.link.count({
+      where: whereCondition,
+    }),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      links: links.map((link) => ({
+        alias: link.alias,
+        originalUrl: link.longUrl,
+        clicks: link._count.clicks,
+        createdAt: link.createdAt,
+        expiresAt: link.expiresAt,
+        isActive: link.isActive,
+        isBroken: link.isBroken,
+        lastChecked: link.lastChecked,
+        owner: link.user
+          ? {
+              id: link.user.id,
+              email: link.user.email,
+              name: link.user.name,
+            }
+          : null,
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
       },
     },
   });
