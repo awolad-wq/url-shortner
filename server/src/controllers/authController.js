@@ -1,17 +1,14 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import prisma from "../config/database.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-const generateToken = () => {
-  return crypto.randomBytes(32).toString("hex");
-};
+const generateToken = () => crypto.randomBytes(32).toString("hex");
 
-const getSessionExpiry = () => {
-  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-};
+const getSessionExpiry = () =>
+  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+/* ===================== REGISTER ===================== */
 export const register = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body;
 
@@ -45,11 +42,23 @@ export const register = asyncHandler(async (req, res) => {
     },
   });
 
-  // TODO: Send verification email
+  // 🔥 CLAIM GUEST LINKS
+  if (req.guestId) {
+    await prisma.link.updateMany({
+      where: {
+        guestId: req.guestId,
+        userId: null,
+      },
+      data: {
+        userId: user.id,
+        guestId: null,
+      },
+    });
+  }
 
   res.status(201).json({
     success: true,
-    message: "Registration successful. Please verify your email",
+    message: "Registration successful",
     data: {
       userId: user.id,
       email: user.email,
@@ -57,6 +66,7 @@ export const register = asyncHandler(async (req, res) => {
   });
 });
 
+/* ===================== LOGIN ===================== */
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -79,6 +89,7 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const token = generateToken();
+
   const session = await prisma.session.create({
     data: {
       userId: user.id,
@@ -86,12 +97,29 @@ export const login = asyncHandler(async (req, res) => {
       expiresAt: getSessionExpiry(),
     },
   });
+
   res.cookie("session_token", session.token, {
-    httpOnly: true, // JS can't access it
+    httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict", // prevents CSRF
+    sameSite: "strict",
     expires: getSessionExpiry(),
   });
+
+  // 🔥 CLAIM GUEST LINKS
+  if (req.guestId) {
+    await prisma.link.updateMany({
+      where: {
+        guestId: req.guestId,
+        userId: null,
+      },
+      data: {
+        userId: user.id,
+        guestId: null,
+      },
+    });
+
+    res.clearCookie("guest_id", { path: "/" });
+  }
 
   res.status(200).json({
     success: true,
@@ -108,6 +136,7 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
+/* ===================== LOGOUT ===================== */
 export const logout = asyncHandler(async (req, res) => {
   await prisma.session.delete({
     where: { id: req.session.id },
@@ -121,6 +150,7 @@ export const logout = asyncHandler(async (req, res) => {
   });
 });
 
+/* ===================== PROFILE ===================== */
 export const getProfile = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },

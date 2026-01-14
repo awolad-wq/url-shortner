@@ -6,81 +6,76 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  password      String   // Hashed password
-  name          String?
-  role          Role     @default(USER)
-  isVerified    Boolean  @default(false) @map("is_verified")
-  verificationToken String? @unique @map("verification_token")
-  resetToken    String?  @unique @map("reset_token")
-  resetTokenExpiry DateTime? @map("reset_token_expiry")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // Relationships
-  links         Link[]
-  sessions      Session[]
-
-  @@index([email])
-  @@map("users")
-}
-
 enum Role {
   USER
   ADMIN
 }
 
+model User {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String   @unique
+  password   String
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+
+  verificationToken String?
+
+  links     Link[]
+  sessions  Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Session {
   id        String   @id @default(cuid())
-  userId    String   @map("user_id")
   token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
-  @@map("sessions")
 }
 
 model Link {
-  id        String   @id @default(cuid())
-  alias     String   @unique
-  longUrl   String   @map("long_url") @db.Text
-  userId    String?  @map("user_id") // NULL for anonymous links
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-  isActive  Boolean  @default(true) @map("is_active")
-  isBroken  Boolean  @default(false) @map("is_broken") // For broken URL detection
-  lastChecked DateTime? @map("last_checked") // Last time URL was verified
+  id          String   @id @default(cuid())
+  alias       String   @unique
+  longUrl     String
 
-  // Relationships
-  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String?
+  guestId String?     // 👈 anonymous tracking
+
+  isActive    Boolean  @default(true)
+  isBroken    Boolean  @default(false)
+  lastChecked DateTime?
+
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   clicks Click[]
 
-  // Indexes
   @@index([alias])
   @@index([userId])
-  @@index([createdAt])
-  @@index([expiresAt])
-  @@index([isActive])
-  @@map("links")
+  @@index([guestId])
 }
 
 model Click {
   id        String   @id @default(cuid())
-  linkId    String   @map("link_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  referrer  String?  @db.Text
-  userAgent String?  @map("user_agent") @db.Text
-  ipHash    String?  @map("ip_hash")
+  linkId    String
+
+  ipHash    String?
+  userAgent String?
+  referrer   String?
+
+  createdAt DateTime @default(now())
 
   link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
-  @@index([linkId, createdAt])
   @@index([linkId])
-  @@map("clicks")
+  @@index([createdAt])
 }

@@ -5,6 +5,7 @@ import urlRouter from "./routes/short.routes.js";
 import { xss } from "express-xss-sanitizer";
 import authRouter from "./routes/auth.routes.js";
 import cookieParser from "cookie-parser";
+import { guestTracker } from "./middleware/guest.js";
 
 const app = express();
 app.use(cookieParser());
@@ -19,6 +20,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(guestTracker);
 
 // Body parsers
 app.use(express.json({ limit: "16kb" }));

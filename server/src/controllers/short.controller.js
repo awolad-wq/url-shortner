@@ -158,6 +158,7 @@ cleanupExpiredLinks();
 export const createShortUrl = asyncHandler(async (req, res) => {
   const { originalUrl, customAlias, expirationDays } = req.body;
   const userId = req.user?.id; // From optional auth middleware
+  const guestId = req.guestId; // 🔥 Get guestId from middleware
 
   // RATE LIMITING
   const clientIp =
@@ -182,17 +183,18 @@ export const createShortUrl = asyncHandler(async (req, res) => {
   }
 
   const urlValidation = isValidUrl(originalUrl);
+  if (!urlValidation.valid) {
+    return res.status(400).json({
+      success: false,
+      error: urlValidation.error,
+    });
+  }
+
   const verify = await verifyUrl(originalUrl);
   if (!verify.isAccessible) {
     return res.status(400).json({
       success: false,
       error: "URL is not reachable or DNS does not exist",
-    });
-  }
-  if (!urlValidation.valid) {
-    return res.status(400).json({
-      success: false,
-      error: urlValidation.error,
     });
   }
 
@@ -227,7 +229,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
 
   let existingLink;
 
-  // Check for existing link (user-specific if authenticated)
+  // Check for existing link (user-specific OR guest-specific)
   if (!customAlias) {
     const whereCondition = {
       longUrl: originalUrl,
@@ -235,12 +237,18 @@ export const createShortUrl = asyncHandler(async (req, res) => {
       expiresAt: { gt: new Date() },
     };
 
-    // If user is authenticated, only check their own links
+    // 🔥 FIX: Check based on userId OR guestId
     if (userId) {
+      // Authenticated user: check only their links
       whereCondition.userId = userId;
-    } else {
-      // For anonymous users, only check anonymous links
+    } else if (guestId) {
+      // Guest user: check only their guest links
+      whereCondition.guestId = guestId;
       whereCondition.userId = null;
+    } else {
+      // No user or guest: skip duplicate check
+      whereCondition.userId = null;
+      whereCondition.guestId = null;
     }
 
     existingLink = await prisma.link.findFirst({
@@ -281,12 +289,14 @@ export const createShortUrl = asyncHandler(async (req, res) => {
 
   // CREATE SHORT URL
   try {
+    // 🔥 FIX: Save userId OR guestId based on authentication
     const newLink = await prisma.link.create({
       data: {
         alias,
         longUrl: originalUrl,
         expiresAt: expirationDate,
-        userId, // Associate with user if authenticated, null otherwise
+        userId: userId || null, // null if not authenticated
+        guestId: userId ? null : guestId, // only set if not authenticated
       },
     });
 
@@ -300,6 +310,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
         createdAt: newLink.createdAt,
         expiresAt: newLink.expiresAt,
         isOwned: !!userId,
+        isGuest: !userId && !!guestId,
       },
     });
   } catch (error) {
@@ -355,16 +366,17 @@ export const getUrl = asyncHandler(async (req, res) => {
     req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.ip;
 
   const ipHash = hashIp(clientIp); // Hash only, never raw IP
-  const referrer = req.get("referer") || req.get("referrer") || null;
+  const referrer = req.get("referrer") || req.get("referrer") || null;
   const userAgent = req.get("user-agent") || null;
 
   // Record click (fire and forget - don't block redirect)
+  // 🔥 FIX: Use 'referrer' to match Prisma schema (not 'referrer')
   prisma.click
     .create({
       data: {
         linkId: link.id,
         ipHash,
-        referrer,
+        referrer: referrer, // Match schema field name
         userAgent,
       },
     })
@@ -400,9 +412,25 @@ export const getUrlStats = asyncHandler(async (req, res) => {
   // Check authorization for private link stats
   const isOwner = req.user && link.userId === req.user.id;
   const isAdmin = req.user && req.user.role === "ADMIN";
+  // 🔥 FIX: Also check if guest owns this link
+  const isGuestOwner = !req.user && req.guestId && link.guestId === req.guestId;
 
   // If link is owned by a user and requester is not owner/admin, limit stats
   if (link.userId && !isOwner && !isAdmin) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        alias: link.alias,
+        originalUrl: link.longUrl,
+        createdAt: link.createdAt,
+        isPrivate: true,
+        message: "Detailed statistics are only available to the link owner",
+      },
+    });
+  }
+
+  // If link is owned by a guest and requester is not that guest, limit stats
+  if (link.guestId && !isGuestOwner && !isAdmin) {
     return res.status(200).json({
       success: true,
       data: {
@@ -457,6 +485,7 @@ export const getUrlStats = asyncHandler(async (req, res) => {
   });
 
   // Query 5: Top referrers
+  // 🔥 FIX: Use 'referrer' to match Prisma schema
   const referrersRaw = await prisma.click.groupBy({
     by: ["referrer"],
     where: {
@@ -492,6 +521,8 @@ export const getUrlStats = asyncHandler(async (req, res) => {
             name: link.user.name,
             email: isOwner || isAdmin ? link.user.email : undefined,
           }
+        : link.guestId
+        ? { type: "guest" }
         : null,
       analytics: {
         totalClicks,
@@ -853,6 +884,8 @@ export const getAllLinks = asyncHandler(async (req, res) => {
               email: link.user.email,
               name: link.user.name,
             }
+          : link.guestId
+          ? { type: "guest", id: link.guestId }
           : null,
       })),
       pagination: {
