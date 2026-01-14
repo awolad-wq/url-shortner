@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
+import useAxios from '../Hooks/UseAxios';
 
 const Register = () => {
+  const axios = useAxios();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -17,9 +19,32 @@ const Register = () => {
 
   console.log(form);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // connect backend later
+    
+    try{
+      const res = await axios.post("/auth/register", {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
+      if (res.data.success) {
+        // Handle successful login (e.g., redirect, show message)
+        console.log("Login successful");
+      } else {
+        console.log("Login failed. Please try again.");
+      }
+    }
+    catch(err){
+      if (!err.response) {
+        console.log("Network Error. Server is not running");
+      } else {
+        console.log(err.response.data?.error || "Login failed");
+      }
+    }
+
+
+
     console.log(form);
   }
 
