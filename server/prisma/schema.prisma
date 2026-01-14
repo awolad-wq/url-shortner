@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String   @unique
+  password   String
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+
+  verificationToken String?
+
+  links     Link[]
+  sessions  Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Link {
+  id          String   @id @default(cuid())
+  alias       String   @unique
+  longUrl     String
+
+  userId  String?
+  guestId String?     // 👈 anonymous tracking
+
+  isActive    Boolean  @default(true)
+  isBroken    Boolean  @default(false)
+  lastChecked DateTime?
+
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clicks Click[]
+
+  @@index([alias])
+  @@index([userId])
+  @@index([guestId])
+}
+
+model Click {
+  id        String   @id @default(cuid())
+  linkId    String
+
+  ipHash    String?
+  userAgent String?
+  referrer   String?
+
+  createdAt DateTime @default(now())
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@index([createdAt])
+}

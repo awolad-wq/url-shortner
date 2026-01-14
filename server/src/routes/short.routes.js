@@ -1,19 +1,35 @@
 import express from "express";
 import {
+  checkUrlHealth,
   createShortUrl,
+  deleteLink,
+  getAllLinks,
   getUrl,
   getUrlStats,
+  getUserLinks,
+  getUserStats,
+  updateLink,
 } from "../controllers/short.controller.js";
+import { authenticate, optionalAuth, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// POST /api/v2/shorten - Create short URL
-router.post("/shorten", createShortUrl);
+router.post("/shorten", optionalAuth, createShortUrl);
 
-// GET /api/v2/stats/:alias - Get link statistics
-router.get("/stats/:alias", getUrlStats);
+// User routes
+router.get("/user/links", authenticate, getUserLinks);
+router.get("/user/stats", authenticate, getUserStats);
 
-// GET /api/v2/:alias - Redirect to original URL (must be last)
+// Admin routes
+router.get("/admin/links", authenticate, requireRole("ADMIN"), getAllLinks);
+
+// Alias-specific routes (LAST)
+router.get("/:alias/stats", optionalAuth, getUrlStats);
+router.post("/:alias/check", authenticate, checkUrlHealth);
+router.patch("/:alias", authenticate, updateLink);
+router.delete("/:alias", authenticate, deleteLink);
 router.get("/:alias", getUrl);
+
+
 
 export default router;
