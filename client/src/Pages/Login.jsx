@@ -1,10 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAxios from "../Hooks/UseAxios";
+import { useAuth } from "../Context/AuthContext";
 
 export default function Login() {
   const axios = useAxios();
   const navigate = useNavigate();
+
+  const { user, setUser } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -33,7 +36,9 @@ export default function Login() {
       // Check if response indicates success
       if (res.data.success) {
         // Store user in localStorage (UI purpose only)
-        localStorage.setItem("user", JSON.stringify(res.data.data.user));
+        // localStorage.setItem("user", JSON.stringify(res.data.data.user));
+
+        setUser(res.data.data.user);
 
 
         // // Store user in localStorage
