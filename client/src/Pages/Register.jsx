@@ -17,8 +17,6 @@ const Register = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  console.log(form);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -30,22 +28,18 @@ const Register = () => {
       });
       if (res.data.success) {
         // Handle successful login (e.g., redirect, show message)
-        console.log("Login successful");
+        console.log("Registration successful");
       } else {
-        console.log("Login failed. Please try again.");
+        console.log("Registration failed. Please try again.");
       }
     }
     catch(err){
       if (!err.response) {
         console.log("Network Error. Server is not running");
       } else {
-        console.log(err.response.data?.error || "Login failed");
+        console.log(err.response.data?.error || "Registration failed");
       }
     }
-
-
-
-    console.log(form);
   }
 
   return (
