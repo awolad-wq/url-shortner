@@ -125,14 +125,14 @@ const Register = () => {
         </div>
 
         {/* Social buttons (UI only) */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* <div className="grid grid-cols-2 gap-3">
           <button className="border cursor-pointer rounded-xl py-2 text-sm hover:bg-slate-100">
             <FcGoogle className="inline-block size-6" />
           </button>
           <button className="border cursor-pointer rounded-xl py-2 text-sm hover:bg-slate-100">
             <FaGithub className="inline-block size-6" /> 
           </button>
-        </div>
+        </div> */}
 
         {/* Footer */}
         <p className="text-center text-sm text-slate-500 mt-6">

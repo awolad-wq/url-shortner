@@ -123,7 +123,7 @@ export default function History() {
 
             <tbody>
               {links.map((link) => {
-                const shortUrl = `${import.meta.env.VITE_API.replace("/api/v1","")}/${link.alias}`;
+                const shortUrl = `${import.meta.env.VITE_API}/${link.alias}`;
 
                 return (
                   <tr
