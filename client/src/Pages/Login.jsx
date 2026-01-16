@@ -36,14 +36,14 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
 
-        // Store user in localStorage
-        localStorage.setItem("user", JSON.stringify(res.data.data.user));
+        // // Store user in localStorage
+        // localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
-        // Check cookies
-        console.log("All cookies:", document.cookie);
+        // // Check cookies
+        // console.log("All cookies:", document.cookie);
 
         // Redirect to dashboard
-        navigate("/");
+        navigate("/dashboard");
       } else {
         // Handle unsuccessful response
         throw new Error(res.data.error || "Login failed");

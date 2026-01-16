@@ -1,103 +1,105 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
-// import logo from '../../../assets/images/logo-flat.png'
-// Icons
-import { GrLogout } from 'react-icons/gr'
-import { FcSettings } from 'react-icons/fc'
-import { AiOutlineBars } from 'react-icons/ai'
-import { BsGraphUp } from 'react-icons/bs'
+import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import useAxios from "../../Hooks/UseAxios";
+import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
+import { RxDashboard } from "react-icons/rx";
+import { FaHistory } from "react-icons/fa";
+import { ImStatsDots } from "react-icons/im";
+import { CgProfile } from "react-icons/cg";
 
-// User Menu
-// import MenuItem from './Menu/MenuItem'
-// import AdminMenu from './Menu/AdminMenu'
-// import SellerMenu from './Menu/SellerMenu'
-// import CustomerMenu from './Menu/CustomerMenu'
 
-const Sidebar = () => {
-  // const { logOut } = useAuth()
-  const [isActive, setActive] = useState(false)
+export default function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const axios = useAxios();
 
-  // Sidebar Responsive Handler
-  const handleToggle = () => {
-    setActive(!isActive)
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  async function handleLogout() {
+    try {
+      // if you have logout api, call it:
+      await axios.post("/auth/logout", {}, { withCredentials: true });
+
+      localStorage.removeItem("user");
+      navigate("/login");
+    } catch {
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
   }
 
-  return (
-    <>
-      {/* Small Screen Navbar, only visible till md breakpoint */}
-      <div className='bg-gray-100 text-gray-800 flex justify-between md:hidden'>
-        <div>
-          <div className='block cursor-pointer p-4 font-bold'>
-            <Link to='/'>
-              <img src={`demo`} alt='logo' width='100' height='100' />
-            </Link>
-          </div>
-        </div>
+  const menu = [
+    { name: "Dashboard", path: "/dashboard", icon: <RxDashboard /> },
+    { name: "History", path: "/dashboard/history", icon: <FaHistory /> },
+    { name: "Statistics", path: "/dashboard/statistics", icon: <ImStatsDots /> },
+    { name: "Profile", path: "/dashboard/profile", icon: <CgProfile /> },
+  ];
 
+  return (
+    <aside
+      className={`bg-white border-r h-screen flex flex-col transition-all duration-300
+      ${collapsed ? "w-20" : "w-64"}`}
+    >
+      {/* Logo */}
+      <div className="h-16 flex items-center justify-between px-4 border-b">
+        {!collapsed && <h1 className="font-bold text-lg">Apar's Link Shortener</h1>}
         <button
-          onClick={handleToggle}
-          className='mobile-menu-button p-4 focus:outline-none focus:bg-gray-200'
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-2 rounded-lg hover:bg-slate-100"
         >
-          <AiOutlineBars className='h-5 w-5' />
+          {collapsed ? <FaArrowRight /> : <FaArrowLeft />}
         </button>
       </div>
 
-      {/* Sidebar */}
-      <div
-        className={`z-10 md:fixed flex flex-col justify-between overflow-x-hidden bg-gray-100 w-64 space-y-6 px-2 py-4 absolute inset-y-0 left-0 transform ${
-          isActive && '-translate-x-full'
-        }  md:translate-x-0  transition duration-200 ease-in-out`}
-      >
-        <div className='flex flex-col h-full'>
-          {/* Top Content */}
-          <div>
-            {/* Logo */}
-            <div className='w-full hidden md:flex px-4 py-2 shadow-lg rounded-lg justify-center items-center bg-lime-100 mx-auto'>
-              <Link to='/'>
-                <h1> Apars' Link Shortener</h1>
-              </Link>
+      {/* User */}
+      <div className="px-4 py-4 border-b">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold">
+            {user?.name?.[0] || "U"}
+          </div>
+
+          {!collapsed && (
+            <div className="leading-tight">
+              <p className="font-medium">{user?.name || "User"}</p>
+              <p className="text-xs text-slate-500">{user?.email}</p>
             </div>
-          </div>
-
-          {/* Middle Content */}
-          {/* <div className='flex flex-col justify-between flex-1 mt-6'> */}
-            {/*  Menu Items */}
-            {/* <nav> */}
-              {/* Common Menu */}
-              {/* <MenuItem
-                icon={BsGraphUp}
-                label='Statistics'
-                address='/dashboard'
-              /> */}
-              {/* Role-Based Menu */}
-              {/* <CustomerMenu />
-              <SellerMenu />
-              <AdminMenu />
-            </nav> */}
-          {/* </div> */}
-
-          {/* Bottom Content */}
-          <div>
-            <hr />
-
-            {/* <MenuItem
-              icon={FcSettings}
-              label='Profile'
-              address='/dashboard/profile'
-            /> */}
-            <button
-              onClick={`console.log('Logout')`}
-              className='flex cursor-pointer w-full items-center px-4 py-2 mt-5 text-gray-600 hover:bg-gray-300   hover:text-gray-700 transition-colors duration-300 transform'
-            >
-              <GrLogout className='w-5 h-5' />
-
-              <span className='mx-4 font-medium'>Logout</span>
-            </button>
-          </div>
+          )}
         </div>
       </div>
-    </>
-  )
-}
 
-export default Sidebar
+      {/* Menu */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
+        {menu.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition
+              ${
+                isActive
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`
+            }
+          >
+            <span className="text-lg">{item.icon}</span>
+            {!collapsed && item.name}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Logout */}
+      <div className="p-3 border-t">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50"
+        >
+          <span className="text-lg">🚪</span>
+          {!collapsed && "Logout"}
+        </button>
+      </div>
+    </aside>
+  );
+}
