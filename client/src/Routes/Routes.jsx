@@ -11,7 +11,7 @@ import History from "../Pages/History";
 import Profile from "../Pages/Profile";
 import LinkStats from "../Pages/LinkStats";
 import AdminLinks from "../Pages/AdminLinks";
-import PrivateRoute from "./PrivateRoute";
+import PrivateRoute from "./PrivateRoute"
 
 export const router = createBrowserRouter([
   {
@@ -40,7 +40,9 @@ export const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    element: <DashboardLayout></DashboardLayout>,
+    element: <PrivateRoute>
+      <DashboardLayout></DashboardLayout>
+    </PrivateRoute>,
     children: [
       {
         path: "/dashboard",

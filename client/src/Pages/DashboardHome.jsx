@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import useAxios from "../Hooks/UseAxios";
+import StatCard from "../Components/StatCard";
 
 
 export default function DashboardHome() {
@@ -67,17 +68,17 @@ export default function DashboardHome() {
       </div>
 
       {/* Overview cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatCard title="Total Links" value={overview.totalLinks} />
         <StatCard title="Active Links" value={overview.activeLinks} />
         <StatCard title="Expired Links" value={overview.expiredLinks} />
-        <StatCard title="Broken Links" value={overview.brokenLinks} />
+        {/* <StatCard title="Broken Links" value={overview.brokenLinks} /> */}
         <StatCard title="Total Clicks" value={overview.totalClicks} />
         <StatCard title="Recent Clicks" value={overview.recentClicks} />
       </div>
 
       {/* Top links */}
-      <div className="bg-white border rounded-2xl shadow-sm p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Top links</h2>
           <Link
@@ -109,7 +110,7 @@ export default function DashboardHome() {
                   const shortUrl = `${import.meta.env.VITE_API}/${link.alias}`;
 
                   return (
-                    <tr key={link.alias} className="border-b last:border-0">
+                    <tr key={link.alias} className="border-b  last:border-0">
                       <td className="py-3 font-medium text-blue-600">
                         <a href={shortUrl} target="_blank" rel="noreferrer">
                           {shortUrl}
@@ -135,13 +136,5 @@ export default function DashboardHome() {
   );
 }
 
-/* ---------- Small stat card component ---------- */
 
-function StatCard({ title, value }) {
-  return (
-    <div className="bg-white border rounded-2xl shadow-sm p-5">
-      <p className="text-sm text-slate-500">{title}</p>
-      <h2 className="text-3xl font-bold mt-2">{value}</h2>
-    </div>
-  );
-}
+

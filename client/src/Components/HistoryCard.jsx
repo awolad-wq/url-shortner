@@ -36,12 +36,12 @@ const HistoryCrad = ({ item }) => {
         {copied ? "Copied ✓" : "Copy link"}
       </button>
 
-      <Link
-        to={`/stats/${item.alias}`}
+      {/* <Link
+        to={`dashboard/stats/${item.alias}`}
         className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 hover:bg-slate-100"
       >
         Details →
-      </Link>
+      </Link> */}
     </div>
 
 

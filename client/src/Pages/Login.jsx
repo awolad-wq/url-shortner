@@ -35,20 +35,14 @@ export default function Login() {
 
       // Check if response indicates success
       if (res.data.success) {
-        // Store user in localStorage (UI purpose only)
-        // localStorage.setItem("user", JSON.stringify(res.data.data.user));
+       
 
         setUser(res.data.data.user);
-
-
-        // // Store user in localStorage
-        // localStorage.setItem("user", JSON.stringify(res.data.data.user));
-
-        // // Check cookies
-        // console.log("All cookies:", document.cookie);
+        // console.log(res.data.data.user);
 
         // Redirect to dashboard
         navigate("/dashboard");
+
       } else {
         // Handle unsuccessful response
         throw new Error(res.data.error || "Login failed");

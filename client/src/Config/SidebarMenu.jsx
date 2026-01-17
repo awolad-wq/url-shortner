@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Link,
   BarChart3,
+  History,
   User,
   Shield,
   LogOut
@@ -9,7 +10,8 @@ import {
 
 export const USER_MENU = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "History", path: "/dashboard/history", icon: Link },
+  { name: "Create Short Link", path: "/", icon: Link },
+  { name: "History", path: "/dashboard/history", icon: History },
   // { name: "Statistics", path: "/dashboard/statistics", icon: BarChart3 },
   { name: "Profile", path: "/dashboard/profile", icon: User },
 ];
