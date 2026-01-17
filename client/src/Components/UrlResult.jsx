@@ -53,12 +53,12 @@ const UrlResult = ({ result }) => {
             {copied ? "Copied ✓" : "Copy link"}
           </button>
 
-          <Link
+          {/* <Link
             to={`/stats/${result.alias}`}
             className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 hover:bg-slate-100"
           >
             Analytics
-          </Link>
+          </Link> */}
         </div>
       </div>
 
