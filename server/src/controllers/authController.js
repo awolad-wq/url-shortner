@@ -5,8 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const generateToken = () => crypto.randomBytes(32).toString("hex");
 
-const getSessionExpiry = () =>
-  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+const getSessionExpiry = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
 /* ===================== REGISTER ===================== */
 export const register = asyncHandler(async (req, res) => {
@@ -100,8 +99,8 @@ export const login = asyncHandler(async (req, res) => {
 
   res.cookie("session_token", session.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true,
+    sameSite: "none",
     expires: getSessionExpiry(),
   });
 
@@ -118,7 +117,7 @@ export const login = asyncHandler(async (req, res) => {
       },
     });
 
-    res.clearCookie("guest_id", { path: "/" });
+    res.clearCookie("guest_id", { path: "/", secure: true, sameSite: "none" });
   }
 
   res.status(200).json({
@@ -142,7 +141,11 @@ export const logout = asyncHandler(async (req, res) => {
     where: { id: req.session.id },
   });
 
-  res.clearCookie("session_token");
+   res.clearCookie("session_token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none", // ✅ Must match login cookie settings
+  });
 
   res.status(200).json({
     success: true,

@@ -25,6 +25,7 @@ app.use(guestTracker);
 // Body parsers
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(xss());
 
 // Trust proxy (for X-Forwarded-For header)
 app.set("trust proxy", true);
@@ -42,7 +43,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use(xss());
+
 
 // URL shortener routes
 // app.use("/api/v1", urlRouter);
