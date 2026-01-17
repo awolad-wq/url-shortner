@@ -207,7 +207,7 @@ const Home = () => {
           )}
 
           {history &&
-            <div className="text-center bg-white border rounded-xl p-6 shadow-sm">
+            <div className="text-center bg-white rounded-xl p-6 shadow-md">
               <p className="text-slate-600 mb-3">
                 Please login to view and manage your history.
               </p>
