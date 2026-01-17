@@ -101,7 +101,7 @@ export const login = asyncHandler(async (req, res) => {
   res.cookie("session_token", session.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" || "lax",
+    sameSite:  "lax",
     expires: getSessionExpiry(),
   });
 
