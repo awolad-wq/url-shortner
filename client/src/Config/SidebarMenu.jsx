@@ -1,0 +1,24 @@
+import {
+  LayoutDashboard,
+  Link,
+  BarChart3,
+  History,
+  User,
+  Shield,
+  LogOut
+} from "lucide-react";
+
+export const USER_MENU = [
+  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { name: "Create Short Link", path: "/", icon: Link },
+  { name: "History", path: "/dashboard/history", icon: History },
+  // { name: "Statistics", path: "/dashboard/statistics", icon: BarChart3 },
+  { name: "Profile", path: "/dashboard/profile", icon: User },
+];
+
+export const ADMIN_MENU = [
+  // { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { name: "All Links", path: "/dashboard/admin/links", icon: Shield },
+  // { name: "Statistics", path: "/dashboard/statistics", icon: BarChart3 },
+  { name: "Profile", path: "/dashboard/profile", icon: User },
+];
