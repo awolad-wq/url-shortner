@@ -16,7 +16,7 @@ app.use(cookieParser());
 // CORS
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: "https://apars-link-shortener.netlify.app",
     credentials: true,
   })
 );
