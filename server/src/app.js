@@ -16,9 +16,9 @@ app.use(cookieParser());
 // CORS
 app.use(
   cors({
-    origin: "https://apars-link-shortener.netlify.app",
+    origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
-  })
+  }),
 );
 app.use(guestTracker);
 
