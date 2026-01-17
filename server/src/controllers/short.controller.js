@@ -260,7 +260,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "URL already shortened",
-      shortUrl: `${req.protocol}://${req.get("host")}/api/v1/${
+      shortUrl: `${req.protocol}://${req.get("host")}/${
         existingLink.alias
       }`,
       data: {
@@ -303,7 +303,7 @@ export const createShortUrl = asyncHandler(async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Short URL created successfully",
-      shortUrl: `${req.protocol}://${req.get("host")}/api/v1/${newLink.alias}`,
+      shortUrl: `${req.protocol}://${req.get("host")}/${newLink.alias}`,
       data: {
         alias: newLink.alias,
         originalUrl: newLink.longUrl,
@@ -575,7 +575,7 @@ export const getUserLinks = asyncHandler(async (req, res) => {
       links: links.map((link) => ({
         alias: link.alias,
         originalUrl: link.longUrl,
-        shortUrl: `${req.protocol}://${req.get("host")}/api/v1/${link.alias}`,
+        shortUrl: `${req.protocol}://${req.get("host")}/${link.alias}`,
         clicks: link._count.clicks,
         createdAt: link.createdAt,
         expiresAt: link.expiresAt,

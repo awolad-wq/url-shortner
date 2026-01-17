@@ -16,7 +16,7 @@ app.use(cookieParser());
 // CORS
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: 'http://localhost:5173',
     credentials: true,
   })
 );
@@ -45,8 +45,10 @@ app.get("/health", (req, res) => {
 app.use(xss());
 
 // URL shortener routes
-app.use("/api/v1", urlRouter);
-app.use("/api/v1/auth", authRouter);
+// app.use("/api/v1", urlRouter);
+// app.use("/api/v1/auth", authRouter);
+app.use("/", urlRouter);
+app.use("/auth", authRouter);
 
 // 404 handler
 app.use((req, res) => {
